@@ -1,0 +1,269 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": [
+        "info",
+        "servers"
+    ],
+    "$defs": {
+        "Info": {
+            "description": "Basic informations about api",
+            "type": "object",
+            "required": [
+                "title",
+                "version"
+            ],
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string",
+                    "format": "version"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "Server": {
+            "description": "Server address with optional description",
+            "type": "object",
+            "required": ["url"],
+            "properties": {
+                "url": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "Tag": {
+            "description": "Tag name and optionally description",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "Schema": {
+            "description": "Schema Definition, either schema expression or full definition",
+            "oneOf": [
+                {
+                    "description": "Schema expression",
+                    "type": "string",
+                    "format": "schema-expression",
+                    "pattern": "^(?:(?:boolean|string|integer|number)(?:\\([^)]*\\))?|<\\w+>)(?:\\??\\[[^\\]]*\\])*\\??$"
+                },
+                {
+                    "description": "Object definitions",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/$defs/Schema"
+                    }
+                }
+            ]
+        },
+        "TypedSchema": {
+            "description": "Schema per Content-Type",
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "\\w+\\/\\w+": {
+                    "$ref": "#/$defs/Schema"
+                }
+            }
+        },
+        "Params": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "schema"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "schema": {
+                        "$ref": "#/$defs/Schema"
+                    },
+                    "required": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                }
+            }
+        },
+        "Traits": {
+            "description": "Traits definition",
+            "type": "object",
+            "patternProperties": {
+                "\\w+(\\(([A-Za-z]+)(,[A-Za-z]+)*\\))?": {
+                    "type": "object",
+                    "properties": {
+                        "params": {
+                            "$ref": "#/$defs/Params"
+                        },
+                        "headers": {
+                            "$ref": "#/$defs/Params"
+                        }
+                    }
+                }
+            }
+        },
+        "Responses": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^[1-5]([0-9]{2}|X{2})$": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "description": {
+                            "type": "string"
+                        }
+                    },
+                    "patternProperties": {
+                        "\\w+\\/\\w+": {
+                            "$ref": "#/$defs/Schema"
+                        }
+                    }
+                }
+            }
+        },
+        "Method": {
+            "description": "Method description",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "traits": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "params": {
+                    "$ref": "#/$defs/Params"
+                },
+                "headers": {
+                    "$ref": "#/$defs/Params"
+                },
+                "body": {
+                    "$ref": "#/$defs/TypedSchema"
+                },
+                "responses": {
+                    "$ref": "#/$defs/Responses"
+                }
+            }
+        },
+        "Endpoints": {
+            "description": "Endpoints definition",
+            "type": "object",
+            "patternProperties": {
+                ".": {
+                    "if": {
+                        "required": [
+                            "asGroup"
+                        ]
+                    },
+                    "then": {
+                        "description": "Endpoint group definition",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "asGroup"
+                        ],
+                        "properties": {
+                            "asGroup": {
+                                "type": "string"
+                            },
+                            "inGroup": {
+                                "type": "string"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "else": {
+                        "description": "Path endpoint definition",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "asGroup": {
+                                "type": "string"
+                            },
+                            "inGroup": {
+                                "type": "string"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "get": {
+                                "$ref": "#/$defs/Method"
+                            },
+                            "post": {
+                                "$ref": "#/$defs/Method"
+                            },
+                            "put": {
+                                "$ref": "#/$defs/Method"
+                            },
+                            "delete": {
+                                "$ref": "#/$defs/Method"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "properties": {
+        "info": {
+            "$ref": "#/$defs/Info"
+        },
+        "servers": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/Server"
+            }
+        },
+        "tags": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/Tag"
+            }
+        },
+        "schemas": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/$defs/Schema"
+            }
+        },
+        "traits": {
+            "$ref": "#/$defs/Traits"
+        },
+        "defaultResponses": {
+            "$ref": "#/$defs/Responses"
+        },
+        "endpoints": {
+            "$ref": "#/$defs/Endpoints"
+        }
+    },
+    "additionalProperties": false
+}

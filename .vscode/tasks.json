@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build",
+            "command": "go build ${input:buildOptions} -o ./bin/qapi.exe ./cmd/app",
+            "type": "shell",
+            "args": [],
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": "build"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "buildOptions",
+            "type": "pickString",
+            "default": "default",
+            "description": "Build options",
+            "options": [
+                {
+                    "label": "default",
+                    "value": ""
+                },
+                {
+                    "label": "With data race check",
+                    "value": "-race"
+                }
+            ]
+        }
+    ]
+}

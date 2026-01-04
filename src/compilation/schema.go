@@ -1,0 +1,130 @@
+package compilation
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+type SchemaType string
+
+const (
+	SchemaNull    SchemaType = "null"
+	SchemaBoolean SchemaType = "boolean"
+	SchemaInteger SchemaType = "integer"
+	SchemaNumber  SchemaType = "number"
+	SchemaString  SchemaType = "string"
+	SchemaArray   SchemaType = "array"
+	SchemaObject  SchemaType = "object"
+)
+
+type Schema struct {
+	Type SchemaType `json:"type" yaml:"type"`
+
+	Properties map[string]SchemaOrRef `json:"properties,omitempty" yaml:"properties,omitempty"`
+	Items      *SchemaOrRef           `json:"items,omitempty" yaml:"items,omitempty"`
+
+	nullable bool // `json:"nullable,omitempty" yaml:"nullable,omitempty"`
+
+	Default *any `json:"default,omitempty" yaml:"default,omitempty"`
+
+	Required []string `json:"required,omitempty" yaml:"required,omitempty"`
+
+	Format string `json:"format,omitempty" yaml:"format,omitempty"`
+
+	UniqueItems bool `json:"uniqueItems,omitempty" yaml:"uniqueItems,omitempty"`
+
+	Minimum *int `json:"minimum,omitempty" yaml:"minimum,omitempty"`
+	Maximum *int `json:"maximum,omitempty" yaml:"maximum,omitempty"`
+
+	MinLength *uint `json:"minLength,omitempty" yaml:"minLength,omitempty"`
+	MaxLength *uint `json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
+
+	MinItems *uint `json:"minItems,omitempty" yaml:"minItems,omitempty"`
+	MaxItems *uint `json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
+
+	Examples []any `json:"examples,omitempty" yaml:"examples,omitempty"`
+}
+
+type SchemaOrRef struct {
+	value any
+}
+
+func (SchemaOrRef) IsEmpty() bool { return false }
+func (SchemaOrRef) IsZero() bool  { return false }
+
+func NewSchemaRef(ref string) SchemaOrRef {
+	return SchemaOrRef{
+		value: ref,
+	}
+}
+
+func NewSchemaDef(schema Schema) SchemaOrRef {
+	return SchemaOrRef{
+		value: schema,
+	}
+}
+
+func (t SchemaOrRef) MarshalYAML() (interface{}, error) {
+	if t.value == nil {
+		return nil, nil
+	}
+
+	switch v := t.value.(type) {
+	case string:
+		return map[string]string{"$ref": v}, nil
+	case Schema:
+		return v, nil
+	default:
+		return nil, fmt.Errorf("invalid SchemaOrRef value type: %T", v)
+	}
+}
+
+func (t SchemaOrRef) MarshalJSON() ([]byte, error) {
+	switch v := t.value.(type) {
+	case string:
+		// Marshal as a reference object: {"$ref": "..."}
+		return json.Marshal(map[string]string{"$ref": v})
+	case Schema:
+		return json.Marshal(v)
+	default:
+		return nil, nil
+	}
+}
+
+func (t *SchemaOrRef) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as reference first
+	var refObj struct {
+		Ref string `json:"$ref"`
+	}
+	if err := json.Unmarshal(data, &refObj); err == nil && refObj.Ref != "" {
+		t.value = refObj.Ref
+		return nil
+	}
+
+	// Otherwise, unmarshal as Schema
+	var schema Schema
+	if err := json.Unmarshal(data, &schema); err != nil {
+		return err
+	}
+	t.value = schema
+	return nil
+}
+
+func (t SchemaOrRef) IsRef() bool {
+	_, ok := t.value.(string)
+	return ok
+}
+
+func (t SchemaOrRef) GetRef() (string, bool) {
+	ref, ok := t.value.(string)
+	return ref, ok
+}
+
+func (t SchemaOrRef) GetSchema() (Schema, bool) {
+	schema, ok := t.value.(Schema)
+	return schema, ok
+}
+
+type TypedSchema struct {
+	Schema SchemaOrRef `json:"schema" yaml:"schema"`
+}
