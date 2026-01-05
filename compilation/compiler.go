@@ -386,6 +386,9 @@ func (c *CompileContext) parseMethod(method *docs.Method, tags []string, path st
 }
 
 func (c *CompileContext) ParsePaths() error {
+
+	c.out.Paths = make(map[string]Path)
+
 	hasAnyMethod := func(p *docs.Path) bool {
 		collected := []*docs.Method{p.Get, p.Post, p.Put, p.Delete}
 		for _, v := range collected {

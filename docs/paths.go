@@ -29,28 +29,32 @@ func (p *Path) UnmarshalYAML(bytes []byte) error {
 	}
 
 	if get, has := raw["get"]; has {
-		if err := yaml.Unmarshal(get, &p.Get); err != nil {
+		p.Get = new(Method)
+		if err := yaml.Unmarshal(get, p.Get); err != nil {
 			return err
 		}
 		delete(raw, "get")
 	}
 
 	if put, has := raw["put"]; has {
-		if err := yaml.Unmarshal(put, &p.Put); err != nil {
+		p.Put = new(Method)
+		if err := yaml.Unmarshal(put, p.Put); err != nil {
 			return err
 		}
 		delete(raw, "put")
 	}
 
 	if post, has := raw["post"]; has {
-		if err := yaml.Unmarshal(post, &p.Post); err != nil {
+		p.Post = new(Method)
+		if err := yaml.Unmarshal(post, p.Post); err != nil {
 			return err
 		}
 		delete(raw, "post")
 	}
 
 	if del, has := raw["delete"]; has {
-		if err := yaml.Unmarshal(del, &p.Delete); err != nil {
+		p.Delete = new(Method)
+		if err := yaml.Unmarshal(del, p.Delete); err != nil {
 			return err
 		}
 		delete(raw, "delete")
@@ -62,9 +66,8 @@ func (p *Path) UnmarshalYAML(bytes []byte) error {
 		p.Nested = make(map[string]Path)
 	}
 
-	var outPath Path
-
 	for k, v := range raw {
+		var outPath Path
 		if err := yaml.Unmarshal(v, &outPath); err != nil {
 			return err
 		}
