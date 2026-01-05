@@ -38,23 +38,11 @@ to quickly create a Cobra application.`,
 
 var errorLogger *log.Logger = log.New(os.Stderr, "Error", log.Ltime)
 
-func validate(bytes []byte) error {
-	var object any
-
-	if err := yaml.Unmarshal(bytes, &object); err != nil {
-		return err
-	}
-
-	validator := validation.New("schema.json")
-
-	return validator.ValidateObject(object)
-}
-
 func CompileFile(output, input string) int {
 
 	log.Printf("Reading %v", input)
 
-	bytes, err := os.ReadFile(input)
+	docBytes, err := os.ReadFile(input)
 
 	if err != nil {
 		errorLogger.Printf("Unable to read file \"%v\": %v", input, err)
@@ -63,7 +51,7 @@ func CompileFile(output, input string) int {
 
 	log.Print("Validating schema..")
 
-	if err := validate(bytes); err != nil {
+	if err := validation.Validate(docBytes); err != nil {
 		errorLogger.Printf("Validation failed: %v", err)
 		return 2
 	}
@@ -72,7 +60,7 @@ func CompileFile(output, input string) int {
 
 	var document docs.Document
 
-	if err := yaml.Unmarshal(bytes, &document); err != nil {
+	if err := yaml.Unmarshal(docBytes, &document); err != nil {
 		errorLogger.Printf("Unable to parse document: %v", err)
 		return 3
 	}
@@ -86,18 +74,18 @@ func CompileFile(output, input string) int {
 	switch ext {
 	case ".json":
 		log.Printf("Type selected: json")
-		bytes, err = compilation.CompileToJSON(&document)
+		docBytes, err = compilation.CompileToJSON(&document)
 	case ".yaml":
 		log.Printf("Type selected: yaml")
-		bytes, err = compilation.CompileToYAML(&document)
+		docBytes, err = compilation.CompileToYAML(&document)
 	default:
 		log.Printf("Unkown file extension, selecting yaml")
-		bytes, err = compilation.CompileToYAML(&document)
+		docBytes, err = compilation.CompileToYAML(&document)
 	}
 
 	log.Printf("Writing to %v", output)
 
-	if err := os.WriteFile(output, bytes, 0644); err != nil {
+	if err := os.WriteFile(output, docBytes, 0644); err != nil {
 		errorLogger.Printf("Unable to write file %v: %v", output, err)
 		return 4
 	}

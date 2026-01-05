@@ -13,6 +13,7 @@ import (
 	"github.com/masnyjimmy/qapi/src/compilation"
 	"github.com/masnyjimmy/qapi/src/docs"
 	"github.com/masnyjimmy/qapi/src/swagger"
+	"github.com/masnyjimmy/qapi/src/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -51,25 +52,25 @@ When update
 */
 func readAPI(filename string) ([]byte, error) {
 
-	bytes, err := os.ReadFile(filename)
+	docBytes, err := os.ReadFile(filename)
 
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read file: %w", err)
 	}
 
-	if err := validate(bytes); err != nil {
+	if err := validation.Validate(docBytes); err != nil {
 		return nil, fmt.Errorf("Validation error: %w", err)
 	}
 
 	var document docs.Document
 
-	bytes, err = compilation.CompileToJSON(&document)
+	docBytes, err = compilation.CompileToJSON(&document)
 
 	if err != nil {
 		return nil, fmt.Errorf("Compilation error: %w", err)
 	}
 
-	return bytes, nil
+	return docBytes, nil
 }
 
 func Serve(input string) {
