@@ -109,13 +109,18 @@ func (c *CompileContext) ParseSchema(schema docs.Schema) (SchemaOrRef, error) {
 	case map[string]docs.Schema:
 		object := Schema{
 			Type:       SchemaObject,
+			Required:   make([]string, 0),
 			Properties: make(map[string]SchemaOrRef),
 		}
 		for name, val := range v {
+			name, opt := strings.CutSuffix(name, "?")
 			if schema, err := c.ParseSchema(val); err != nil {
 				return SchemaOrRef{}, err
 			} else {
 				object.Properties[name] = schema
+				if !opt {
+					object.Required = append(object.Required, name)
+				}
 			}
 		}
 		return NewSchemaDef(object), nil
