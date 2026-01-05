@@ -65,9 +65,12 @@
                 {
                     "description": "Object definitions",
                     "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/$defs/Schema"
-                    }
+                    "patternProperties": {
+                        "^[\\w\\d]+\\??$": {
+                            "$ref": "#/$defs/Schema"
+                        }
+                    },
+                    "additionalProperties": false
                 }
             ]
         },
