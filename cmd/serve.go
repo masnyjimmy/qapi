@@ -34,6 +34,7 @@ var serveCmd = &cobra.Command{
 
 var (
 	baseUrl *string
+	port    *uint16
 )
 
 func init() {
@@ -46,6 +47,7 @@ func init() {
 		"Base URL path",
 	)
 
+	port = serveCmd.Flags().Uint16P("port", "p", 8080, "Application port")
 }
 
 /*
@@ -125,6 +127,6 @@ func Serve(input string) {
 		}
 		go watchHandler()
 	}
-	log.Print("Started server at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", swaggerHandler.Handler(nil)))
+	log.Printf("Started server at http://localhost:%v", *port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), swaggerHandler.Handler(nil)))
 }
