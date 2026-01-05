@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/goccy/go-yaml"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
@@ -33,7 +34,7 @@ func init() {
 func Validate(documentBytes []byte) error {
 	var document any
 
-	if err := json.Unmarshal(documentBytes, &document); err != nil {
+	if err := yaml.Unmarshal(documentBytes, &document); err != nil {
 		return fmt.Errorf("Unable to parse document: %w", err)
 	}
 
