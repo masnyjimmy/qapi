@@ -29,7 +29,9 @@
         "Server": {
             "description": "Server address with optional description",
             "type": "object",
-            "required": ["url"],
+            "required": [
+                "url"
+            ],
             "properties": {
                 "url": {
                     "type": "string"
@@ -125,7 +127,9 @@
                 "^[1-5]([0-9]{2}|X{2})$": {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": ["description"],
+                    "required": [
+                        "description"
+                    ],
                     "properties": {
                         "description": {
                             "type": "string"
@@ -167,69 +171,33 @@
                 }
             }
         },
-        "Endpoints": {
-            "description": "Endpoints definition",
+        "Path": {
+            "description": "Path definition",
             "type": "object",
             "patternProperties": {
-                ".": {
-                    "if": {
-                        "required": [
-                            "asGroup"
-                        ]
-                    },
-                    "then": {
-                        "description": "Endpoint group definition",
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                            "asGroup"
-                        ],
-                        "properties": {
-                            "asGroup": {
-                                "type": "string"
-                            },
-                            "inGroup": {
-                                "type": "string"
-                            },
-                            "tags": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "else": {
-                        "description": "Path endpoint definition",
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                            "asGroup": {
-                                "type": "string"
-                            },
-                            "inGroup": {
-                                "type": "string"
-                            },
-                            "tags": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "get": {
-                                "$ref": "#/$defs/Method"
-                            },
-                            "post": {
-                                "$ref": "#/$defs/Method"
-                            },
-                            "put": {
-                                "$ref": "#/$defs/Method"
-                            },
-                            "delete": {
-                                "$ref": "#/$defs/Method"
-                            }
-                        }
+                "^(?:(?:\\/[a-zA-Z0-9$-_.+!*'()]+)|(?:\\/{[a-zA-Z0-9]+}))+$": {
+                    "$ref": "#/$defs/Path"
+                }
+            },
+            "additionalProperties": false,
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
+                },
+                "get": {
+                    "$ref": "#/$defs/Method"
+                },
+                "post": {
+                    "$ref": "#/$defs/Method"
+                },
+                "put": {
+                    "$ref": "#/$defs/Method"
+                },
+                "delete": {
+                    "$ref": "#/$defs/Method"
                 }
             }
         }
@@ -262,8 +230,14 @@
         "defaultResponses": {
             "$ref": "#/$defs/Responses"
         },
-        "endpoints": {
-            "$ref": "#/$defs/Endpoints"
+        "paths": {
+            "type": "object",
+            "patternProperties": {
+                "^(?:(?:\\/[a-zA-Z0-9$-_.+!*'()]+)|(?:\\/{[a-zA-Z0-9]+}))+$": {
+                    "$ref": "#/$defs/Path"
+                }
+            },
+            "additionalProperties": false
         }
     },
     "additionalProperties": false
