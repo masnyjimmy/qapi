@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/goccy/go-yaml"
 	"github.com/masnyjimmy/qapi/compilation"
 	"github.com/masnyjimmy/qapi/docs"
 	"github.com/masnyjimmy/qapi/swagger"
@@ -63,6 +64,10 @@ func readAPI(filename string) ([]byte, error) {
 	}
 
 	var document docs.Document
+
+	if err := yaml.Unmarshal(docBytes, &document); err != nil {
+		panic(err) // this shouln't happen
+	}
 
 	docBytes, err = compilation.CompileToJSON(&document)
 

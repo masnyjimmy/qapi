@@ -23,9 +23,8 @@ func buildSwaggerUI(documentUrl, eventsUrl string) []byte {
 }
 
 type Options struct {
-	DebounceTime  time.Duration
-	BaseUrl       string
-	EnableRefresh bool
+	DebounceTime time.Duration
+	BaseUrl      string
 }
 
 func DefaultOptions() Options {
@@ -77,7 +76,9 @@ func (s *Swagger) Handler(h http.Handler) http.Handler {
 	swaggerUI := buildSwaggerUI(s.urls.Document, s.urls.Events)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Pattern {
+		path := r.URL.Path
+
+		switch path {
 		case s.urls.UI:
 			w.Header().Set("Content-Type", "text/html")
 			w.Write(swaggerUI)
@@ -87,7 +88,7 @@ func (s *Swagger) Handler(h http.Handler) http.Handler {
 			defer s.mu.RUnlock()
 			w.Write(s.document)
 		default:
-			if s.options.EnableRefresh && r.Pattern == s.urls.Events {
+			if path == s.urls.Events {
 				s.broadcaster.ServeHTTP(w, r)
 			} else {
 				if h != nil {

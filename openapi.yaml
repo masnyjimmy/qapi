@@ -1,0 +1,232 @@
+openapi: 3.1.0
+info:
+  title: Miastobar Backend
+  version: 0.0.1
+servers:
+- url: http://localhost:8080
+  description: Local testing server
+tags:
+- name: Auth
+  description: Authorization endpoints
+- name: Resources
+  description: Resources endpoints
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: userId
+    DefaultError:
+      type: object
+      properties:
+        code:
+          type: string
+          format: errorCode
+        details:
+          type: string
+    File:
+      type: string
+      format: binary
+    ImageInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: imageId
+        originalName:
+          type: string
+        thumbnailUrl:
+          type: string
+        url:
+          type: string
+    LoginRequest:
+      type: object
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+paths:
+  /api/v1/auth/login:
+    post:
+      tags:
+      - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Sucessful login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        4XX:
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+            text/plain:
+              schema:
+                type: string
+        5XX:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+  /api/v1/resources/image:
+    get:
+      tags:
+      - Resources
+      parameters:
+      - name: skip
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+          maximum: 100
+      responses:
+        "200":
+          description: List of images
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageInfo"
+        4XX:
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+            text/plain:
+              schema:
+                type: string
+        5XX:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+    put:
+      tags:
+      - Resources
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  $ref: "#/components/schemas/File"
+      responses:
+        "200":
+          description: Success
+          content: {}
+        4XX:
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+            text/plain:
+              schema:
+                type: string
+        5XX:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+  /api/v1/resources/image/find:
+    get:
+      tags:
+      - Resources
+      parameters:
+      - name: name
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: skip
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+          maximum: 100
+      responses:
+        "200":
+          description: Found images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ImageInfo"
+        4XX:
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+            text/plain:
+              schema:
+                type: string
+        5XX:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+  /api/v1/resources/image/{imageId}:
+    get:
+      tags:
+      - Resources
+      parameters:
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: imageId
+      responses:
+        "200":
+          description: Image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageInfo"
+        4XX:
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
+            text/plain:
+              schema:
+                type: string
+        5XX:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DefaultError"
