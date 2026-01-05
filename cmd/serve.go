@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/masnyjimmy/qapi/src/compilation"
-	"github.com/masnyjimmy/qapi/src/docs"
-	"github.com/masnyjimmy/qapi/src/swagger"
-	"github.com/masnyjimmy/qapi/src/validation"
+	"github.com/masnyjimmy/qapi/compilation"
+	"github.com/masnyjimmy/qapi/docs"
+	"github.com/masnyjimmy/qapi/swagger"
+	"github.com/masnyjimmy/qapi/validation"
 	"github.com/spf13/cobra"
 )
 

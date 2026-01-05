@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/masnyjimmy/qapi/src/docs"
+	"github.com/masnyjimmy/qapi/docs"
 )
 
 type CompileContext struct {

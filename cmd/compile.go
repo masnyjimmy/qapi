@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
-	"github.com/masnyjimmy/qapi/src/compilation"
-	"github.com/masnyjimmy/qapi/src/docs"
-	"github.com/masnyjimmy/qapi/src/validation"
+	"github.com/masnyjimmy/qapi/compilation"
+	"github.com/masnyjimmy/qapi/docs"
+	"github.com/masnyjimmy/qapi/validation"
 	"github.com/spf13/cobra"
 )
 
