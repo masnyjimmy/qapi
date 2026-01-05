@@ -504,7 +504,7 @@ func Compile(out *Document, in *docs.Document) error {
 	ctx := newCompileContext(in, out)
 
 	if err := ctx.Parse(); err != nil {
-		return fmt.Errorf("Compilation error: %w", err)
+		return err
 	}
 
 	return nil
@@ -522,7 +522,7 @@ func CompileToJSON(in *docs.Document) ([]byte, error) {
 	bytes, err := json.Marshal(out)
 
 	if err != nil {
-		return nil, fmt.Errorf("Unable to produce json document: %w", err)
+		panic(err) // should be ok
 	}
 
 	return bytes, nil
@@ -540,7 +540,7 @@ func CompileToYAML(in *docs.Document) ([]byte, error) {
 	bytes, err := yaml.Marshal(out)
 
 	if err != nil {
-		return nil, fmt.Errorf("Unable to produce yaml document: %w", err)
+		panic(err)
 	}
 
 	return bytes, nil

@@ -106,11 +106,12 @@ func Serve(input string) {
 
 				bytes, err := readAPI(input)
 				if err != nil {
-					log.Printf("Unable to update api: %v", err)
+					log.Printf("Document update failed: %v", err)
 					continue
 				}
 
 				swaggerHandler.SetDocument(bytes)
+				log.Print("Document updated")
 			}
 		}
 		go watchHandler()
