@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -384,93 +385,66 @@ func (c *CompileContext) parseMethod(method *docs.Method, tags []string, path st
 	return &out, nil
 }
 
-func (c *CompileContext) ParseEndpoints() error {
-	c.out.Paths = make(map[string]Path, len(c.in.Endpoints))
-
-	var nameToGroup map[string]string = make(map[string]string)
-
-	// collect groups names
-	for path, endpoint := range c.in.Endpoints {
-		group, isGroup := endpoint.AsGroup()
-
-		if !isGroup {
-			continue
+func (c *CompileContext) ParsePaths() error {
+	hasAnyMethod := func(p *docs.Path) bool {
+		collected := []*docs.Method{p.Get, p.Post, p.Put, p.Delete}
+		for _, v := range collected {
+			if v != nil {
+				return true
+			}
 		}
-
-		nameToGroup[group.AsGroup] = path
+		return false
 	}
 
-	// build openapi paths from endpoints
+	var collectPaths func(currentPath string, p docs.Path) error
 
-	for path, endpoint := range c.in.Endpoints {
-		endpoint, isEndpoint := endpoint.AsFinal()
-
-		if !isEndpoint {
-			continue
-		}
-
-		if endpoint.InGroup != "" {
-
-			groupPath, has := nameToGroup[endpoint.InGroup]
-
-			if !has {
-				return fmt.Errorf("Invalid inGroup value, %s is not group", endpoint.InGroup)
+	collectPaths = func(currentPath string, current docs.Path) error {
+		if hasAnyMethod(&current) {
+			outPath := Path{
+				Summary: "", //TODO: remove it or use later
 			}
 
-			path = groupPath + path
-			group, _ := c.in.Endpoints[groupPath].AsGroup()
-			endpoint.Tags = append(endpoint.Tags, group.Tags...)
-
-			for group.InGroup != "" {
-				groupPath, has = nameToGroup[group.InGroup]
-
-				if !has {
-					return fmt.Errorf("Invalid %s group inGroup value, %s is not group", group.AsGroup, group.InGroup)
-				}
-
-				path = groupPath + path
-				group, _ = c.in.Endpoints[groupPath].AsGroup()
-				endpoint.Tags = append(endpoint.Tags, group.Tags...)
+			if op, err := c.parseMethod(current.Get, current.Tags, currentPath); err != nil {
+				return fmt.Errorf("unable to parse method: %v", err)
+			} else {
+				outPath.Get = op
 			}
+
+			if op, err := c.parseMethod(current.Post, current.Tags, currentPath); err != nil {
+				return fmt.Errorf("unable to parse method: %v", err)
+			} else {
+				outPath.Post = op
+			}
+
+			if op, err := c.parseMethod(current.Put, current.Tags, currentPath); err != nil {
+				return fmt.Errorf("unable to parse method: %v", err)
+			} else {
+				outPath.Put = op
+			}
+
+			if op, err := c.parseMethod(current.Delete, current.Tags, currentPath); err != nil {
+				return fmt.Errorf("unable to parse method: %v", err)
+			} else {
+				outPath.Delete = op
+			}
+
+			c.out.Paths[currentPath] = outPath
 		}
 
-		outPath := Path{}
-
-		if get, err := c.parseMethod(endpoint.Get, endpoint.Tags, path); err != nil {
-			return err
-		} else {
-			outPath.Get = get
-		}
-
-		setMethod := func(outOp **Operation, met *docs.Method) error {
-			op, err := c.parseMethod(met, endpoint.Tags, path)
-			if err != nil {
+		for nextPath, next := range current.Nested {
+			next.Tags = append(next.Tags, current.Tags...)
+			if err := collectPaths(path.Join(currentPath, nextPath), next); err != nil {
 				return err
 			}
-
-			*outOp = op
-			return nil
 		}
-
-		if err := setMethod(&outPath.Get, endpoint.Get); err != nil {
-			return err
-		}
-
-		if err := setMethod(&outPath.Put, endpoint.Put); err != nil {
-			return err
-		}
-
-		if err := setMethod(&outPath.Post, endpoint.Post); err != nil {
-			return err
-		}
-
-		if err := setMethod(&outPath.Delete, endpoint.Delete); err != nil {
-			return err
-		}
-
-		c.out.Paths[path] = outPath
+		return nil
 	}
 
+	for currentPath, current := range c.in.Paths {
+		if err := collectPaths(currentPath, current); err != nil {
+			return fmt.Errorf("unable to collect paths: %v", err)
+		}
+	}
 	return nil
 }
 
@@ -493,7 +467,7 @@ func (c *CompileContext) Parse() error {
 		return err
 	}
 
-	if err := c.ParseEndpoints(); err != nil {
+	if err := c.ParsePaths(); err != nil {
 		return err
 	}
 

@@ -7,5 +7,5 @@ type Document struct {
 	Schemas          map[string]Schema `yaml:"schemas,omitempty"`
 	Traits           Traits            `yaml:"traits,omitempty"`
 	DefaultResponses Responses         `yaml:"defaultResponses,omitempty"`
-	Endpoints        Endpoints         `yaml:"endpoints,omitempty"`
+	Paths            Paths             `yaml:"paths,omitempty"`
 }
