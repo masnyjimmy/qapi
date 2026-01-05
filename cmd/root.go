@@ -4,6 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -33,6 +34,8 @@ func Execute() {
 	}
 }
 
+var input *string
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
@@ -45,8 +48,10 @@ func init() {
 
 	persist := rootCmd.PersistentFlags()
 
-	persist.StringP("input", "i", "", "API Document input file")
+	input = persist.StringP("input", "i", "", "API Document input file")
 
 	rootCmd.MarkPersistentFlagFilename("input", "yaml")
 	rootCmd.MarkPersistentFlagRequired("input")
 }
+
+var errorLogger *log.Logger = log.New(os.Stderr, "Error", log.Ltime)

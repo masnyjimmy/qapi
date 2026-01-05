@@ -32,25 +32,31 @@ var serveCmd = &cobra.Command{
 	},
 }
 
+var (
+	baseUrl *string
+)
+
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
-	serveCmd.Flags().StringP(
-		"input",
-		"i",
-		"openapi.yaml",
-		"OpenAPI 3.1 YAML file to watch",
+	baseUrl = serveCmd.Flags().StringP(
+		"baseUrl",
+		"b",
+		"/",
+		"Base URL path",
 	)
+
 }
 
 /*
-When update
-1. read bytes
-2. validate schema
-3. unmarshal
-4. compile
-5. marshal
+	When update
+		1. read bytes
+		2. validate schema
+		3. unmarshal
+		4. compile
+		5. marshal
 */
+
 func readAPI(filename string) ([]byte, error) {
 
 	docBytes, err := os.ReadFile(filename)
@@ -86,7 +92,10 @@ func Serve(input string) {
 		log.Fatal(err)
 	}
 
-	swaggerHandler, err := swagger.New(document, swagger.DefaultOptions())
+	swaggerHandler, err := swagger.New(document, swagger.Options{
+		DebounceTime: swagger.DEFAULT_DEBOUNCE_TIME,
+		BaseUrl:      *baseUrl,
+	})
 
 	if err != nil {
 		log.Fatalf("Invalid input: %v", err)

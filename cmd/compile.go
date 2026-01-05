@@ -36,7 +36,24 @@ to quickly create a Cobra application.`,
 	},
 }
 
-var errorLogger *log.Logger = log.New(os.Stderr, "Error", log.Ltime)
+func init() {
+	rootCmd.AddCommand(compileCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// compileCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// compileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	compileCmd.Flags().StringP("output", "o", "openapi.yaml", "Output filepath")
+	compileCmd.MarkFlagRequired("output")
+	compileCmd.MarkFlagFilename("output", "yaml", "json")
+
+}
 
 func CompileFile(output, input string) int {
 
@@ -92,23 +109,4 @@ func CompileFile(output, input string) int {
 
 	log.Printf("Finished succesfully :)")
 	return 0
-}
-
-func init() {
-	rootCmd.AddCommand(compileCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// compileCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// compileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	compileCmd.Flags().StringP("output", "o", "openapi.yaml", "Output filepath")
-	compileCmd.MarkFlagRequired("output")
-	compileCmd.MarkFlagFilename("output", "yaml", "json")
-
 }
