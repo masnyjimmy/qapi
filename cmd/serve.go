@@ -15,6 +15,7 @@ import (
 	"github.com/masnyjimmy/qapi/docs"
 	"github.com/masnyjimmy/qapi/swagger"
 	"github.com/masnyjimmy/qapi/validation"
+	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 )
 
@@ -128,5 +129,7 @@ func Serve(input string) {
 		go watchHandler()
 	}
 	log.Printf("Started server at http://localhost:%v", *port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), swaggerHandler.Handler(nil)))
+
+	handler := cors.AllowAll().Handler(swaggerHandler.Handler(nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *port), handler))
 }
