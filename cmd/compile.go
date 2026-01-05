@@ -61,7 +61,7 @@ func CompileFile(output, input string) int {
 		return 1
 	}
 
-	log.Printf("Validating schema..")
+	log.Print("Validating schema..")
 
 	if err := validate(bytes); err != nil {
 		errorLogger.Printf("Validation failed: %v", err)
@@ -73,30 +73,33 @@ func CompileFile(output, input string) int {
 	var document docs.Document
 
 	if err := yaml.Unmarshal(bytes, &document); err != nil {
-		log.Printf("Unable to parse document: %v", err)
-		return 2
+		errorLogger.Printf("Unable to parse document: %v", err)
+		return 3
 	}
 
-	out := compilation.NewDocument()
+	log.Print("Compiling api document..")
 
-	compiler := compilation.New(&document, out)
+	ext := filepath.Ext(output)
 
-	log.Printf("Compiling openapi document..")
+	log.Printf("Output file extension: %v", ext)
 
-	switch filepath.Ext(output) {
-	case "json":
+	switch ext {
+	case ".json":
 		log.Printf("Type selected: json")
-		err = compiler.ToJSON(output)
-	case "yaml":
+		bytes, err = compilation.CompileToJSON(&document)
+	case ".yaml":
 		log.Printf("Type selected: yaml")
-		err = compiler.ToYAML(output)
+		bytes, err = compilation.CompileToYAML(&document)
 	default:
 		log.Printf("Unkown file extension, selecting yaml")
-		err = compiler.ToYAML(output)
+		bytes, err = compilation.CompileToYAML(&document)
 	}
 
-	if err != nil {
-		errorLogger.Printf("Unable to compile file: %v", err)
+	log.Printf("Writing to %v", output)
+
+	if err := os.WriteFile(output, bytes, 0644); err != nil {
+		errorLogger.Printf("Unable to write file %v: %v", output, err)
+		return 4
 	}
 
 	log.Printf("Finished succesfully :)")

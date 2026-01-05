@@ -8,9 +8,3 @@ type Document struct {
 	Components Components      `json:"components,omitempty" yaml:"components,omitempty"`
 	Paths      map[string]Path `json:"paths,omitempty" yaml:"paths,omitempty"`
 }
-
-func NewDocument() *Document {
-	return &Document{
-		Openapi: "3.1.0",
-	}
-}

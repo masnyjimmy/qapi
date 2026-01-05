@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "Build",
-            "command": "go build ${input:buildOptions} -o ./bin/qapi.exe ./cmd/app",
+            "command": "go build ${input:buildOptions} -o ./bin/qapi.exe ./cmd/qapi",
             "type": "shell",
             "args": [],
             "presentation": {

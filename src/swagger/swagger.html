@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Swagger UI</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.19/swagger-ui.css" />
+</head>
+
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.19/swagger-ui-bundle.js"></script>
+  <script>
+    const DocumentURL = "%OPENAPI_DOCUMENT_URL%"
+    const EventsURL = "%EVENTS_URL%"
+    const ui = SwaggerUIBundle({
+      url: DocumentURL,
+      dom_id: '#swagger-ui',
+      presets: [SwaggerUIBundle.presets.apis],
+      layout: "BaseLayout",
+      tryItOutEnabled: true,            // enable "Try it out"
+      requestInterceptor: (req) => {
+        // Example: add an Authorization header automatically.
+        // req.headers['Authorization'] = 'Bearer <token>';
+        return req;
+      }
+    });
+    window.ui = ui;
+
+    if (EventsURL != "") {
+      const evtSource = new EventSource(EventsURL);
+      evtSource.addEventListener('update', async (e) => {
+        console.log('update event:', e.data);
+        try {
+          const res = await fetch(DocumentURL, { cache: 'no-store' });
+          const spec = await res.json();
+
+          window.ui.specActions.updateSpec(spec);
+          window.ui.specActions.download();
+        } catch (err) {
+          console.error('Failed to reload swagger spec', err);
+        }
+      });
+      evtSource.onerror = err => {
+        console.warn('SSE Error', err);
+      };
+
+      window.evtSource = evtSource;
+    }
+
+  </script>
+</body>
+
+</html>

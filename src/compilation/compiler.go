@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -13,7 +12,7 @@ import (
 	"github.com/masnyjimmy/qapi/src/docs"
 )
 
-type Compiler struct {
+type CompileContext struct {
 	in  *docs.Document
 	out *Document
 
@@ -72,19 +71,19 @@ func MapArray[T ~[]I, U ~[]O, I any, O any](in T, out *U, mapFn func(idx int, in
 	}
 }
 
-func New(input *docs.Document, output *Document) *Compiler {
-	return &Compiler{
+func newCompileContext(input *docs.Document, output *Document) *CompileContext {
+	return &CompileContext{
 		in:  input,
 		out: output,
 	}
 }
 
-func (c *Compiler) CompileInfo() {
+func (c *CompileContext) CompileInfo() {
 	c.out.Info.Title = c.in.Info.Title
 	c.out.Info.Version = c.in.Info.Version
 }
 
-func (c *Compiler) CompileServers() {
+func (c *CompileContext) CompileServers() {
 	MapArray(c.in.Servers, &c.out.Servers, func(idx int, in docs.Server) Server {
 		return Server{
 			Url:         in.Url,
@@ -93,7 +92,7 @@ func (c *Compiler) CompileServers() {
 	})
 }
 
-func (c *Compiler) CompileTags() {
+func (c *CompileContext) CompileTags() {
 	MapArray(c.in.Tags, &c.out.Tags, func(idx int, in docs.Tag) Tag {
 		return Tag{
 			Name:        in.Name,
@@ -102,7 +101,7 @@ func (c *Compiler) CompileTags() {
 	})
 }
 
-func (c *Compiler) ParseSchema(schema docs.Schema) (SchemaOrRef, error) {
+func (c *CompileContext) ParseSchema(schema docs.Schema) (SchemaOrRef, error) {
 	switch v := schema.(type) {
 	case string: // expr
 		return parseSchema(v)
@@ -124,7 +123,7 @@ func (c *Compiler) ParseSchema(schema docs.Schema) (SchemaOrRef, error) {
 	}
 }
 
-func (c *Compiler) ParseSchemas() error {
+func (c *CompileContext) ParseSchemas() error {
 
 	if c.out.Components.Schemas == nil {
 		c.out.Components.Schemas = make(map[string]Schema)
@@ -147,7 +146,7 @@ func (c *Compiler) ParseSchemas() error {
 	return nil
 }
 
-func (c *Compiler) ParseDefaultResponses() error {
+func (c *CompileContext) ParseDefaultResponses() error {
 
 	c.defaultResponses = make(map[StatusCode]Response, len(c.in.DefaultResponses))
 
@@ -176,7 +175,7 @@ func (c *Compiler) ParseDefaultResponses() error {
 
 var traitEvExpr = regexp.MustCompile(`^([A-Za-z_]\w*)(?:\(\s*([^()]+?)\s*\))?$`)
 
-func (c *Compiler) compileTrait(args string, t docs.Trait) (PrecompiledTrait, error) {
+func (c *CompileContext) compileTrait(args string, t docs.Trait) (PrecompiledTrait, error) {
 	splited := strings.Split(args, ",")
 	argsOut := make([]string, len(splited))
 
@@ -191,7 +190,7 @@ func (c *Compiler) compileTrait(args string, t docs.Trait) (PrecompiledTrait, er
 	}, nil
 }
 
-func (c *Compiler) compileTraits() error {
+func (c *CompileContext) compileTraits() error {
 	c.compiledTraits = make(map[string]PrecompiledTrait, len(c.in.Traits))
 
 	for expr, trait := range c.in.Traits {
@@ -213,7 +212,7 @@ func (c *Compiler) compileTraits() error {
 	return nil
 }
 
-func (c *Compiler) evaluateTrait(expr string) (docs.Trait, error) {
+func (c *CompileContext) evaluateTrait(expr string) (docs.Trait, error) {
 	groups := traitEvExpr.FindStringSubmatch(expr)
 
 	if groups == nil {
@@ -240,7 +239,7 @@ func (c *Compiler) evaluateTrait(expr string) (docs.Trait, error) {
 
 }
 
-func (c *Compiler) evaluateTraits(traits []string) ([]docs.Trait, error) {
+func (c *CompileContext) evaluateTraits(traits []string) ([]docs.Trait, error) {
 	if traits == nil {
 		return nil, nil
 	}
@@ -258,7 +257,7 @@ func (c *Compiler) evaluateTraits(traits []string) ([]docs.Trait, error) {
 	return out, nil
 }
 
-func (c *Compiler) parseMethod(method *docs.Method, tags []string, path string) (*Operation, error) {
+func (c *CompileContext) parseMethod(method *docs.Method, tags []string, path string) (*Operation, error) {
 	if method == nil {
 		return nil, nil
 	}
@@ -385,7 +384,7 @@ func (c *Compiler) parseMethod(method *docs.Method, tags []string, path string) 
 	return &out, nil
 }
 
-func (c *Compiler) ParseEndpoints() error {
+func (c *CompileContext) ParseEndpoints() error {
 	c.out.Paths = make(map[string]Path, len(c.in.Endpoints))
 
 	var nameToGroup map[string]string = make(map[string]string)
@@ -475,7 +474,7 @@ func (c *Compiler) ParseEndpoints() error {
 	return nil
 }
 
-func (c *Compiler) Parse() error {
+func (c *CompileContext) Parse() error {
 	c.CompileInfo()
 
 	c.CompileServers()
@@ -501,52 +500,48 @@ func (c *Compiler) Parse() error {
 	return nil
 }
 
-func (c *Compiler) ToJSON(filename string) error {
+func Compile(out *Document, in *docs.Document) error {
+	ctx := newCompileContext(in, out)
 
-	if err := c.Parse(); err != nil {
-		return err
-	}
-
-	bytes, err := json.Marshal(c.out)
-
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(filename)
-
-	if err != nil {
-		return err
-	}
-
-	if _, err := file.Write(bytes); err != nil {
-		return err
+	if err := ctx.Parse(); err != nil {
+		return fmt.Errorf("Compilation error: %w", err)
 	}
 
 	return nil
 }
 
-func (c *Compiler) ToYAML(filename string) error {
-
-	if err := c.Parse(); err != nil {
-		return err
+func CompileToJSON(in *docs.Document) ([]byte, error) {
+	out := Document{
+		Openapi: "3.1.0",
 	}
 
-	bytes, err := yaml.Marshal(c.out)
+	if err := Compile(&out, in); err != nil {
+		return nil, err
+	}
+
+	bytes, err := json.Marshal(out)
 
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("Unable to produce json document: %w", err)
 	}
 
-	file, err := os.Create(filename)
+	return bytes, nil
+}
+
+func CompileToYAML(in *docs.Document) ([]byte, error) {
+	out := Document{
+		Openapi: "3.1.0",
+	}
+
+	if err := Compile(&out, in); err != nil {
+		return nil, err
+	}
+
+	bytes, err := yaml.Marshal(out)
 
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("Unable to produce yaml document: %w", err)
 	}
 
-	if _, err := file.Write(bytes); err != nil {
-		return err
-	}
-
-	return nil
+	return bytes, nil
 }
