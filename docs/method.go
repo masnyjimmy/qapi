@@ -1,6 +1,7 @@
 package docs
 
 type Method struct {
+	Id          string      `yaml:"id,omitempty"`
 	Description string      `yaml:"description,omitempty"`
 	Traits      []string    `yaml:"traits,omitempty"`
 	Params      Params      `yaml:"params,omitempty"`

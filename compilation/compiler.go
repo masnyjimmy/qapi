@@ -294,7 +294,8 @@ func (c *CompileContext) parseMethod(method *docs.Method, tags []string, path st
 	}
 
 	out := Operation{
-		Summary: method.Description,
+		OperationId: method.Id,
+		Summary:     method.Description,
 		// TODO: add OperationId: "asd" ,
 		Tags:       tags,
 		Parameters: make([]Parameter, 0),

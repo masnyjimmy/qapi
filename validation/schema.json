@@ -151,6 +151,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "id": {
+                    "type": "string",
+                    "$comment": "TODO: Add patern, no spaces numbs/chars"
+                },
                 "description": {
                     "type": "string"
                 },
