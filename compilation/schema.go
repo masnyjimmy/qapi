@@ -63,8 +63,25 @@ func NewSchemaDef(schema Schema) SchemaOrRef {
 		value: schema,
 	}
 }
+func (t Schema) marshalYAML(nullable bool) (any, error) {
+	if nullable {
+		// produce: oneOf: [ {type: "null"}, <schema-without-nullable> ]
+		nonNull := t
+		nonNull.nullable = false // ensure the inner schema is not nullable
 
-func (t SchemaOrRef) MarshalYAML() (interface{}, error) {
+		return map[string]any{
+			"oneOf": []any{
+				map[string]string{"type": string(SchemaNull)},
+				nonNull,
+			},
+		}, nil
+	}
+
+	// default: marshal normally as the Schema struct (nullable field is internal)
+	return t, nil
+}
+
+func (t SchemaOrRef) MarshalYAML() (any, error) {
 	if t.value == nil {
 		return nil, nil
 	}
@@ -73,7 +90,7 @@ func (t SchemaOrRef) MarshalYAML() (interface{}, error) {
 	case string:
 		return map[string]string{"$ref": v}, nil
 	case Schema:
-		return v, nil
+		return v.marshalYAML(v.nullable)
 	default:
 		return nil, fmt.Errorf("invalid SchemaOrRef value type: %T", v)
 	}

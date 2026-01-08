@@ -296,10 +296,9 @@ func (c *CompileContext) parseMethod(method *docs.Method, tags []string, path st
 	out := Operation{
 		OperationId: method.Id,
 		Summary:     method.Description,
-		// TODO: add OperationId: "asd" ,
-		Tags:       tags,
-		Parameters: make([]Parameter, 0),
-		Responses:  maps.Clone(c.defaultResponses),
+		Tags:        tags,
+		Parameters:  make([]Parameter, 0),
+		Responses:   maps.Clone(c.defaultResponses),
 	}
 
 	// params to parameters

@@ -60,7 +60,7 @@
                     "description": "Schema expression",
                     "type": "string",
                     "format": "schema-expression",
-                    "pattern": "^(?:(?:boolean|string|integer|number)(?:\\([^)]*\\))?|<\\w+>)(?:\\??\\[[^\\]]*\\])*\\??$"
+                    "pattern": "^(?:(?:boolean|string|integer|number)\\??(?:\\([^)]+\\))?)|(?:<\\w+>)(?:\\??\\[[^\\]]*\\])*$"
                 },
                 {
                     "description": "Object definitions",
