@@ -95,16 +95,27 @@ func (t SchemaOrRef) MarshalYAML() (any, error) {
 		return nil, fmt.Errorf("invalid SchemaOrRef value type: %T", v)
 	}
 }
-
 func (t SchemaOrRef) MarshalJSON() ([]byte, error) {
 	switch v := t.value.(type) {
 	case string:
-		// Marshal as a reference object: {"$ref": "..."}
+		// reference object: {"$ref": "..."}
 		return json.Marshal(map[string]string{"$ref": v})
 	case Schema:
+		// if schema is nullable, produce: {"oneOf":[{"type":"null"}, <schema-without-nullable>]}
+		if v.nullable {
+			nonNull := v
+			nonNull.nullable = false // avoid infinite recursion / re-wrapping
+
+			oneOf := []any{
+				map[string]string{"type": string(SchemaNull)},
+				nonNull,
+			}
+			return json.Marshal(map[string]any{"oneOf": oneOf})
+		}
+		// normal schema
 		return json.Marshal(v)
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("invalid SchemaOrRef value type: %T", t.value)
 	}
 }
 
