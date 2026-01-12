@@ -378,9 +378,11 @@ func (c *CompileContext) parseMethod(method *docs.Method, tags []string, path st
 
 			for mediaType, schema := range response.TypedSchema {
 				outSchema, err := c.ParseSchema(schema)
+
 				if err != nil {
 					return nil, err
 				}
+
 				outResponse.Content[mediaType] = TypedSchema{
 					Schema: outSchema,
 				}
