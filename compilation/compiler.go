@@ -371,16 +371,19 @@ func (c *CompileContext) parseMethod(method *docs.Method, tags []string, path st
 	for statusCode, response := range method.Responses {
 		outResponse := Response{
 			Description: response.Description,
-			Content:     make(map[string]TypedSchema),
 		}
 
-		for mediaType, schema := range response.TypedSchema {
-			outSchema, err := c.ParseSchema(schema)
-			if err != nil {
-				return nil, err
-			}
-			outResponse.Content[mediaType] = TypedSchema{
-				Schema: outSchema,
+		if len(response.TypedSchema) != 0 {
+			outResponse.Content = make(map[string]TypedSchema)
+
+			for mediaType, schema := range response.TypedSchema {
+				outSchema, err := c.ParseSchema(schema)
+				if err != nil {
+					return nil, err
+				}
+				outResponse.Content[mediaType] = TypedSchema{
+					Schema: outSchema,
+				}
 			}
 		}
 
