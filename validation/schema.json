@@ -203,6 +203,9 @@
                 "put": {
                     "$ref": "#/$defs/Method"
                 },
+                "patch": {
+                    "$ref": "#/$defs/Method"
+                },
                 "delete": {
                     "$ref": "#/$defs/Method"
                 }
