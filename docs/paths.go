@@ -7,6 +7,7 @@ type Path struct {
 	Get    *Method         `yaml:"get,omitempty"`
 	Post   *Method         `yaml:"post,omitempty"`
 	Put    *Method         `yaml:"put,omitempty"`
+	Patch  *Method         `yaml:"patch,omitempty"`
 	Delete *Method         `yaml:"delete,omitempty"`
 	Nested map[string]Path `yaml:",inline"`
 }
@@ -50,6 +51,14 @@ func (p *Path) UnmarshalYAML(bytes []byte) error {
 			return err
 		}
 		delete(raw, "post")
+	}
+
+	if patch, has := raw["patch"]; has {
+		p.Post = new(Method)
+		if err := yaml.Unmarshal(patch, p.Patch); err != nil {
+			return err
+		}
+		delete(raw, "patch")
 	}
 
 	if del, has := raw["delete"]; has {
