@@ -400,7 +400,7 @@ func (c *CompileContext) ParsePaths() error {
 	c.out.Paths = make(map[string]Path)
 
 	hasAnyMethod := func(p *docs.Path) bool {
-		collected := []*docs.Method{p.Get, p.Post, p.Put, p.Delete}
+		collected := []*docs.Method{p.Get, p.Post, p.Put, p.Patch, p.Delete}
 		for _, v := range collected {
 			if v != nil {
 				return true
@@ -433,6 +433,12 @@ func (c *CompileContext) ParsePaths() error {
 				return fmt.Errorf("unable to parse method: %v", err)
 			} else {
 				outPath.Put = op
+			}
+
+			if op, err := c.parseMethod(current.Patch, current.Tags, currentPath); err != nil {
+				return fmt.Errorf("unable to parse method: %v", err)
+			} else {
+				outPath.Patch = op
 			}
 
 			if op, err := c.parseMethod(current.Delete, current.Tags, currentPath); err != nil {
