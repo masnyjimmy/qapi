@@ -54,7 +54,7 @@ func (p *Path) UnmarshalYAML(bytes []byte) error {
 	}
 
 	if patch, has := raw["patch"]; has {
-		p.Post = new(Method)
+		p.Patch = new(Method)
 		if err := yaml.Unmarshal(patch, p.Patch); err != nil {
 			return err
 		}
