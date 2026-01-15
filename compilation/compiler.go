@@ -27,14 +27,20 @@ type PrecompiledTrait struct {
 }
 
 func (p *PrecompiledTrait) compileSchema(schema docs.Schema, r *strings.Replacer) docs.Schema {
-	switch t := schema.(type) {
+	switch t := schema.Value.(type) {
 	case string:
-		return r.Replace(t)
-	case map[string]docs.Schema:
-		for k, v := range t {
-			t[k] = p.compileSchema(v, r)
+		return docs.Schema{
+			Value: r.Replace(t),
 		}
-		return t
+	case docs.Properties:
+
+		for idx, prop := range t {
+			t[idx].Schema = p.compileSchema(prop.Schema, r)
+		}
+
+		return docs.Schema{
+			Value: t,
+		}
 	default:
 		panic(fmt.Errorf("invalid schema underlying type: %v", reflect.TypeOf(schema).Name()))
 	}
@@ -103,18 +109,18 @@ func (c *CompileContext) CompileTags() {
 }
 
 func (c *CompileContext) ParseSchema(schema docs.Schema) (SchemaOrRef, error) {
-	switch v := schema.(type) {
+	switch v := schema.Value.(type) {
 	case string: // expr
 		return parseSchema(v)
-	case map[string]docs.Schema:
+	case docs.Properties:
 		object := Schema{
 			Type:       SchemaObject,
 			Required:   make([]string, 0),
 			Properties: make(Properties, 0),
 		}
-		for name, val := range v {
-			name, opt := strings.CutSuffix(name, "?")
-			if schema, err := c.ParseSchema(val); err != nil {
+		for _, property := range v {
+			name, opt := strings.CutSuffix(property.Name, "?")
+			if schema, err := c.ParseSchema(property.Schema); err != nil {
 				return SchemaOrRef{}, err
 			} else {
 				object.Properties = append(object.Properties, Property{
