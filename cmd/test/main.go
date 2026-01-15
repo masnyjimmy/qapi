@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -11,19 +10,22 @@ import (
 )
 
 func main() {
-	bytes, _ := os.ReadFile("private/api.yaml")
+	bytes, err := os.ReadFile("private/api.yaml")
 
+	if err != nil {
+		panic(err)
+	}
 	var document docs.Document
 
 	if err := yaml.Unmarshal(bytes, &document); err != nil {
 		panic(err)
 	}
 
-	var outDocument compilation.Document
+	var out compilation.Document
 
-	compilation.Compile(&outDocument, &document)
+	if err := compilation.Compile(&out, &document); err != nil {
+		panic(err)
+	}
 
-	bytes, _ = json.MarshalIndent(document.Paths, "", "    ")
-
-	fmt.Print(string(bytes))
+	fmt.Println(out)
 }

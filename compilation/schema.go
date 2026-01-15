@@ -1,8 +1,11 @@
 package compilation
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+
+	"github.com/goccy/go-yaml"
 )
 
 type SchemaType string
@@ -17,11 +20,18 @@ const (
 	SchemaObject  SchemaType = "object"
 )
 
+type Property struct {
+	Name   string
+	Schema SchemaOrRef
+}
+
+type Properties []Property
+
 type Schema struct {
 	Type SchemaType `json:"type" yaml:"type"`
 
-	Properties map[string]SchemaOrRef `json:"properties,omitempty" yaml:"properties,omitempty"`
-	Items      *SchemaOrRef           `json:"items,omitempty" yaml:"items,omitempty"`
+	Properties Properties   `json:"properties,omitempty" yaml:"properties,omitempty"`
+	Items      *SchemaOrRef `json:"items,omitempty" yaml:"items,omitempty"`
 
 	nullable bool // `json:"nullable,omitempty" yaml:"nullable,omitempty"`
 
@@ -63,6 +73,20 @@ func NewSchemaDef(schema Schema) SchemaOrRef {
 		value: schema,
 	}
 }
+
+func (p Properties) MarshalYAML() (any, error) {
+	s := make(yaml.MapSlice, 0, len(p))
+
+	for _, el := range p {
+		s = append(s, yaml.MapItem{
+			Key:   el.Name,
+			Value: el.Schema,
+		})
+	}
+
+	return s, nil
+}
+
 func (t Schema) marshalYAML(nullable bool) (any, error) {
 	if nullable {
 		// produce: oneOf: [ {type: "null"}, <schema-without-nullable> ]
@@ -95,6 +119,41 @@ func (t SchemaOrRef) MarshalYAML() (any, error) {
 		return nil, fmt.Errorf("invalid SchemaOrRef value type: %T", v)
 	}
 }
+func (p Properties) MarshalJSON() ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+
+	buf.WriteByte('{')
+
+	for idx, el := range p {
+
+		bytes, err := json.Marshal(el.Name)
+
+		if err != nil {
+			return nil, err
+		}
+
+		buf.Write(bytes)
+
+		buf.WriteByte(':')
+
+		bytes, err = json.Marshal(el.Schema)
+
+		if err != nil {
+			return nil, err
+		}
+
+		buf.Write(bytes)
+
+		if idx != (len(p) - 1) {
+			buf.WriteByte(',')
+		}
+	}
+
+	buf.WriteByte('}')
+
+	return buf.Bytes(), nil
+}
+
 func (t SchemaOrRef) MarshalJSON() ([]byte, error) {
 	switch v := t.value.(type) {
 	case string:
@@ -119,24 +178,24 @@ func (t SchemaOrRef) MarshalJSON() ([]byte, error) {
 	}
 }
 
-func (t *SchemaOrRef) UnmarshalJSON(data []byte) error {
-	// Try to unmarshal as reference first
-	var refObj struct {
-		Ref string `json:"$ref"`
-	}
-	if err := json.Unmarshal(data, &refObj); err == nil && refObj.Ref != "" {
-		t.value = refObj.Ref
-		return nil
-	}
+// func (t *SchemaOrRef) UnmarshalJSON(data []byte) error {
+// 	// Try to unmarshal as reference first
+// 	var refObj struct {
+// 		Ref string `json:"$ref"`
+// 	}
+// 	if err := json.Unmarshal(data, &refObj); err == nil && refObj.Ref != "" {
+// 		t.value = refObj.Ref
+// 		return nil
+// 	}
 
-	// Otherwise, unmarshal as Schema
-	var schema Schema
-	if err := json.Unmarshal(data, &schema); err != nil {
-		return err
-	}
-	t.value = schema
-	return nil
-}
+// 	// Otherwise, unmarshal as Schema
+// 	var schema Schema
+// 	if err := json.Unmarshal(data, &schema); err != nil {
+// 		return err
+// 	}
+// 	t.value = schema
+// 	return nil
+// }
 
 func (t SchemaOrRef) IsRef() bool {
 	_, ok := t.value.(string)
