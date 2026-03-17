@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -35,6 +36,7 @@ func buildSwaggerUI(documentUrl, eventsUrl string) []byte {
 type Options struct {
 	DebounceTime time.Duration
 	BaseUrl      string
+	Logger       *slog.Logger
 }
 
 func DefaultOptions() Options {
@@ -51,6 +53,10 @@ type urls struct {
 }
 
 func makeUrls(base string) urls {
+	if !strings.HasPrefix(base, "/") {
+		base = "/" + base
+	}
+
 	return urls{
 		UI:       path.Clean(base),
 		Document: path.Join(base, "openapi.json"),
@@ -85,8 +91,7 @@ func readAPI(filename string) ([]byte, error) {
 }
 
 type Swagger struct {
-	options Options
-
+	Options
 	broadcaster *broadcaster
 	urls        urls
 	mu          sync.RWMutex
@@ -97,8 +102,12 @@ func New(document []byte, opt Options) (*Swagger, error) {
 
 	broadcaster := NewBroadcaster()
 
+	if opt.Logger == nil {
+		opt.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
 	out := &Swagger{
-		options:     opt,
+		Options:     opt,
 		broadcaster: broadcaster,
 		urls:        makeUrls(opt.BaseUrl),
 		document:    document,
@@ -143,7 +152,7 @@ func (s *Swagger) watchHandler(w *Watcher, filename string, ctx context.Context)
 		select {
 		case err := <-w.Update:
 			if err != nil {
-				slog.Error("Swagger watcher fatal error", slog.String("details", err.Error()))
+				s.Logger.Error("Swagger watcher fatal error", slog.String("details", err.Error()))
 				w.Close()
 				return
 			}
@@ -151,11 +160,11 @@ func (s *Swagger) watchHandler(w *Watcher, filename string, ctx context.Context)
 			result, err := readAPI(filename)
 
 			if err != nil {
-				slog.Warn("Document update failed", slog.String("details", err.Error()))
+				s.Logger.Warn("Document update failed", slog.String("details", err.Error()))
 			}
 
 			s.SetDocument(result)
-			slog.Info("Document updated")
+			s.Logger.Info("Document updated")
 		case <-ctx.Done():
 			w.Close()
 			return
@@ -168,7 +177,8 @@ func (s *Swagger) Handler(h http.Handler) http.Handler {
 	swaggerUI := buildSwaggerUI(s.urls.Document, s.urls.Events)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := strings.TrimLeft(r.URL.Path, "/")
+		path := r.URL.Path
+
 		switch path {
 		case s.urls.UI:
 			w.Header().Set("Content-Type", "text/html")
@@ -178,13 +188,11 @@ func (s *Swagger) Handler(h http.Handler) http.Handler {
 			s.mu.RLock()
 			defer s.mu.RUnlock()
 			w.Write(s.document)
+		case s.urls.Events:
+			s.broadcaster.ServeHTTP(w, r)
 		default:
-			if path == s.urls.Events {
-				s.broadcaster.ServeHTTP(w, r)
-			} else {
-				if h != nil {
-					h.ServeHTTP(w, r)
-				}
+			if h != nil {
+				h.ServeHTTP(w, r)
 			}
 		}
 	})
