@@ -168,8 +168,7 @@ func (s *Swagger) Handler(h http.Handler) http.Handler {
 	swaggerUI := buildSwaggerUI(s.urls.Document, s.urls.Events)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-
+		path := strings.TrimLeft(r.URL.Path, "/")
 		switch path {
 		case s.urls.UI:
 			w.Header().Set("Content-Type", "text/html")
