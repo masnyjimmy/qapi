@@ -1,13 +1,23 @@
 package swagger
 
 import (
+	"context"
 	_ "embed"
+	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
+	"os"
 	"path"
 	"slices"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-yaml"
+	"github.com/masnyjimmy/qapi/compilation"
+	"github.com/masnyjimmy/qapi/docs"
+	"github.com/masnyjimmy/qapi/validation"
 )
 
 //go:embed swagger.html
@@ -48,6 +58,32 @@ func makeUrls(base string) urls {
 	}
 }
 
+func readAPI(filename string) ([]byte, error) {
+	bytes, err := os.ReadFile(filename)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to read file %v: %w", filename, err)
+	}
+
+	if err := validation.Validate(bytes); err != nil {
+		return nil, fmt.Errorf("validation error: %w", err)
+	}
+
+	var document docs.Document
+
+	if err := yaml.Unmarshal(bytes, &document); err != nil {
+		return nil, fmt.Errorf("unable to decode document: %w", err)
+	}
+
+	result, err := compilation.CompileToJSON(&document)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to compile document: %w", err)
+	}
+
+	return result, nil
+}
+
 type Swagger struct {
 	options Options
 
@@ -69,6 +105,62 @@ func New(document []byte, opt Options) (*Swagger, error) {
 	}
 
 	return out, nil
+}
+
+func NewFromFile(filename string, opt Options) (*Swagger, error) {
+	result, err := readAPI(filename)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to read api: %w", err)
+	}
+
+	return New(result, opt)
+}
+
+var ErrWatcher = errors.New("unable to create watcher")
+
+func NewWithWatcher(filename string, ctx context.Context, opt Options) (*Swagger, error) {
+
+	swagger, err := NewFromFile(filename, opt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	watcher, err := WatchFile(filename, opt.DebounceTime)
+
+	if err != nil {
+		return swagger, fmt.Errorf("%w: %w", ErrWatcher, err)
+	}
+
+	go swagger.watchHandler(watcher, filename, ctx)
+
+	return swagger, nil
+}
+
+func (s *Swagger) watchHandler(w *Watcher, filename string, ctx context.Context) {
+	for {
+		select {
+		case err := <-w.Update:
+			if err != nil {
+				slog.Error("Swagger watcher fatal error", slog.String("details", err.Error()))
+				w.Close()
+				return
+			}
+
+			result, err := readAPI(filename)
+
+			if err != nil {
+				slog.Warn("Document update failed", slog.String("details", err.Error()))
+			}
+
+			s.SetDocument(result)
+			slog.Info("Document updated")
+		case <-ctx.Done():
+			w.Close()
+			return
+		}
+	}
 }
 
 func (s *Swagger) Handler(h http.Handler) http.Handler {

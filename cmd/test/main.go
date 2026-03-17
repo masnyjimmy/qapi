@@ -1,31 +1,19 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"context"
+	"log"
+	"net/http"
 
-	"github.com/goccy/go-yaml"
-	"github.com/masnyjimmy/qapi/compilation"
-	"github.com/masnyjimmy/qapi/docs"
+	"github.com/masnyjimmy/qapi/swagger"
 )
 
 func main() {
-	bytes, err := os.ReadFile("private/api.yaml")
+	s, err := swagger.NewWithWatcher("private/api.yaml", context.Background(), swagger.DefaultOptions())
 
 	if err != nil {
-		panic(err)
-	}
-	var document docs.Document
-
-	if err := yaml.Unmarshal(bytes, &document); err != nil {
-		panic(err)
+		log.Fatalf("skibidi: %v", err)
 	}
 
-	var out compilation.Document
-
-	if err := compilation.Compile(&out, &document); err != nil {
-		panic(err)
-	}
-
-	fmt.Println(out)
+	log.Fatal(http.ListenAndServe(":1234", s.Handler(nil)))
 }
